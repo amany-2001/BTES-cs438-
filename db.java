@@ -28,16 +28,22 @@ public class db {
             // استرجاع بيانات المستخدم
             ResultSet resultusers = statement.executeQuery("SELECT * FROM user");
             while (resultusers.next()) {
-                User user = new User(resultusers.getInt("id"), resultusers.getString("username"), resultusers.getInt("userAge"),resultusers.getString("phone"),resultusers.getString("email"),resultusers.getString("accountNumber"),resultusers.getString("password"),resultusers.getInt("point"));
+                User user = new User(resultusers.getInt("userID"), resultusers.getString("userName"), resultusers.getInt("userAge"),resultusers.getString("phone"),resultusers.getString("email"),resultusers.getString("accountNumber"),resultusers.getString("password"),resultusers.getInt("point"));
                 users.add(user);
             }
 
             // استرجاع بيانات الحدت
             
-
-            resultusers.close();
+            ResultSet resultevent= statement.executeQuery("SELECT * FROM event");
+            while (resultevent.next()) {
+                Event event = new Event(resultevent.getInt("eventID"), resultevent.getString("eventName"), resultevent.getstring("category"),resultevent.getDate("date"),resultevent.getString("loacation");
+                event.add(event);
+            }
+        
             
-
+            resultuser.close();
+            resultevent.close();
+            resultSeats.close();
             statement.close();
             connection.close();
         } catch (Exception e) {
