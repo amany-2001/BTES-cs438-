@@ -20,7 +20,7 @@ $db = $database->getConnection();
     <?php 
         $event = new Event($db);
         $stmt = $event->getAllEvents();
-        echo "<h2>جميع الأحداث</h2>";
+        echo "<h2>events </h2>";
 
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
          echo $row['eventname'] . "<br>";
