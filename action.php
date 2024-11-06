@@ -10,40 +10,63 @@ $db = $database->getConnection();
 
 $action = $_POST['action'];
 
+
 if ($action == 'details') {
-    $eventname = isset($_POST['eventname']) ? $_POST['eventname'] : '';
-    if ($eventname) {
+    $event_id = isset($_POST['event_id']) ? $_POST['event_id'] : '';
+    if ($event_id) {
         $event = new Event($db);
-        $stmt = $event->displayDetails($eventname); 
-        echo "<h2>تفاصيل الحدث: $eventname</h2>";
+        $stmt = $event->displayDetails($event_id);
+        echo "<h2>تفاصيل الحدث</h2>";
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            echo "اسم الحدث: " . $row['eventname'] . "<br>";
-            echo "الوصف: " . $row['category'] . "<br>";
-            echo "التاريخ: " . $row['date'] . "<br>";
-            echo "الموقع: " . $row['location'] . "<br><br>";
+            echo "event name " . $row['eventname'] . "<br>";
+            echo "category: " . $row['category'] . "<br>";
+            echo "date: " . $row['date'] . "<br>";
+            echo "location: " . $row['location'] . "<br><br>";
         }
+
+        // عرض المقاعد المتاحة
+        $seat = new Seat($db);
+        $availableSeats = $seat->getSeatsByEvent($event_id);
+
+        echo "<form action='booking.php' method='post'>";
+        echo "<table border='1'>";
+        echo "<tr><th> seat number</th><th>price</th><th>  </th></tr>";
+        foreach ($availableSeats as $seat) {
+            echo "<tr>";
+            echo "<td>" . $seat['seatnumber'] . "</td>";
+            echo "<td>". ."</td>"; ////////المفروض ان نضيفو السعر هنا 
+            echo "<td><input type='checkbox' name='seat_ids[]' value='" . $seat['seatid'] . "'></td>";
+            echo "</tr>";
+        }
+        echo "</table>";
+        echo "<input type='hidden' name='event_id' value='" . $event_id . "'>";
+        echo "<button type='submit'> go to booking </button>";
+        echo "</form>";
     } else {
-        echo "حدث خطأ: لم يتم تمرير اسم الحدث.";
+        echo "error:event id not passed";
     }
 } elseif ($action == 'bookTicket') {
     $user_id = $_POST['user_id'];
-    $seat_number = $_POST['seatnumber'];
-    $event_name = $_POST['eventname'];
+    $password = $_POST['password'];
+    $event_id = $_POST['event_id'];
+    $seat_ids = $_POST['seat_ids'];
 
     $user = new User($db);
-    if ($user->bookTicket($user_id, $seat_number, $event_name)) {
-        echo "تم حجز التذكرة بنجاح.";
-    } else {
-        echo "فشل في حجز التذكرة.";
+    foreach ($seat_ids as $seat_id) {
+        if ($user->bookTicket($user_id, $password, $seat_id, $event_id)) {
+            echo " the ticket has been reserved for seat : " . $seat_id . "<br>";
+        } else {
+            echo "failed to book ticket for seat: " . $seat_id . "<br>";
+        }
     }
 } elseif ($action == 'refundTicket') {
     $ticket_id = $_POST['ticket_id'];
 
     $user = new User($db);
     if ($user->refundTicket($ticket_id)) {
-        echo "تم إرجاع التذكرة بنجاح.";
+        echo " the ticket has been refunded";
     } else {
-        echo "فشل في إرجاع التذكرة.";
+        echo "failed to refund ticket";
     }
 }  elseif ($action == 'rateEvent') {
     $event_id = $_POST['event_id'];
@@ -52,9 +75,9 @@ if ($action == 'details') {
 
     $user = new User($db);
     if ($user->rateEvent($event_id, $user_id, $review)) {
-        echo "تم إرسال التقييم بنجاح.";
+        echo "//////*********";
     } else {
-        echo "فشل في إرسال التقييم.";
+        echo "/./************/";
     }
 }
 ?>
