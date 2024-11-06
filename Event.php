@@ -19,7 +19,7 @@ class Event {
 
     public function getAllEvents() {
         try{
-            $query = "SELECT eventname FROM " . $this->table_name;
+            $query = "SELECT eventname ,category ,eventid  FROM " . $this->table_name;
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
             return $stmt;
@@ -28,23 +28,13 @@ class Event {
             return false;
         }
     }
-    public function displayDetails($eventname) {
-        $query = "SELECT * FROM events WHERE eventname = ?";
+    public function displayDetails($eventid) {
+        $query = "SELECT * FROM events WHERE eventid = ?";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(1, $eventname, PDO::PARAM_STR);
+        $stmt->bindParam(1, $eventid, PDO::PARAM_STR);
         $stmt->execute();
         return $stmt;
     }
 
-    // public function get_available_seats() {
-    //     $availableSeats = [];
-    //     foreach ($this->seats as $seat) {
-    //         if ($seat->is_seat_available()) {
-    //             $availableSeats[] = $seat;
-    //         }
-    //     }
-    //     return $availableSeats;
-    // }
-   
 }
 ?>
