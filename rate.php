@@ -3,18 +3,21 @@
     <head>
         <meta charset="UTF-8">
         <title>rate event</title>
+        <link rel="stylesheet" href="style.css"> 
     </head>
     <body>
-        <h2>تقييم حدث</h2>
+        <div class="page-header">
+            <h1>Rate an Event</h1>
+        </div>
         <form action="action.php" method="post">
             <input type="hidden" name="action" value="rateEvent">
-            <label for="event_id">معرف الحدث:</label>
+            <label for="event_id"> event id:</label>
             <input type="number" name="event_id" required><br>
-            <label for="user_id">معرف المستخدم:</label>
+            <label for="user_id">user id :</label>
             <input type="number" name="user_id" required><br>
-            <label for="review">التقييم:</label>
-            <input type="text" name="review" required><br>
-            <button type="submit">إرسال التقييم</button>
+            <label for="review">the rating:</label>
+            <input type="textarea" name="review" required><br>
+            <button type="submit"> rated</button>
         </form>
     </body>
 </html>
