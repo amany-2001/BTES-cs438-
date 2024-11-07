@@ -18,15 +18,15 @@ class Seat {
 
     // دالة لجلب جميع المقاعد الخاصة بحدث معين
     public function getSeatsByEvent($event_id) {
-        try{
-            $query = "SELECT * FROM " . $this->table_name . " WHERE eventid = ?";
+        try {
+            $query = "SELECT * FROM seats WHERE eventid = ? AND isavailable = TRUE";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $event_id);
+            $stmt->bindParam(1, $event_id, PDO::PARAM_INT);
             $stmt->execute();
-            return $stmt;
-        } catch(PDOException $e){
-            echo "error in getSeatsByEvent :". $e->getMessage();
-            return false;
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Error in getSeatsByEvent: " . $e->getMessage();
+            return [];
         }
     }
 
@@ -46,29 +46,17 @@ class Seat {
     }
 
     // دالة لاختيار مقعد
-    public function chooseSeat($seat_id) {
-        try{
-            // التحقق من توفر المقعد
-            $query = "SELECT isavailable FROM " . $this->table_name . " WHERE seatid = ?";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $seat_id);
-            $stmt->execute();
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($row && $row['isavailable']) {
-                // تحديث حالة المقعد إلى غير متاح
-                $updateQuery = "UPDATE " . $this->table_name . " SET isavailable = 0 WHERE seatid = ?";
-                $updateStmt = $this->conn->prepare($updateQuery);
-                $updateStmt->bindParam(1, $seat_id);
-                return $updateStmt->execute();
-            } else {
-                return false; // المقعد غير متاح
-            }
-        } catch(PDOException $e){
-            echo "error in chooseSeat :". $e->getMessage();
+    public function chooseSeat($seat_id, $user_id, $event_id) {
+        try {
+            // استدعاء دالة bookTicket لحجز المقعد وتحديث الحالة
+            $ticketObj = new Ticket($this->conn);
+            return $ticketObj->bookTicket($user_id, $seat_id, $event_id);
+        } catch (PDOException $e) {
+            echo "Error in chooseSeat: " . $e->getMessage();
             return false;
         }
     }
+    
 
     // دالة للتحقق من حالة المقعد
     public function isSeatAvailable($seat_id) {
@@ -97,12 +85,5 @@ class Seat {
             return false;
         }
     }
-
-    // public function setAvailable($isAvailable) {
-    //     $this->isAvailable = $isAvailable;
-    // }
-    // public function reserv_seats($available) {
-    //     $this->isAvailable = $available;
-    // }
 }
 ?>
