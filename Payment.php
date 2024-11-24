@@ -4,7 +4,7 @@ abstract class Payment{
     protected $coon;
     protected $paymentId;
     protected $userId;
-    protected $price;
+    protected $amount;
     protected $state;
     protected $ticketId;
     protected $method;
