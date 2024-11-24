@@ -32,5 +32,38 @@ class Ticket {
             return false;
         }
     }
+
+    public function bookWithPayment($userID, $seat_id, $eventid, $paymentType, $paymentData) {
+        $price = $this->getPrice($eventid, $seat_id);
+
+        if (!$price) {
+            throw new Exception("Invalid ticket details.");
+        }
+
+        // إنشاء كائن من نوع الدفع المحدد
+        $paymentClass = $paymentType . "Payment";
+        if (!class_exists($paymentClass)) {
+            throw new Exception("Invalid payment method.");
+        }
+
+        $payment = new $paymentClass($this->conn);
+        $payment->ticketID = $seat_id; 
+        $payment->userID = $userID;
+        $payment->amount = $price;
+        $payment->status = 'pending';
+        $payment->method = $paymentType;
+
+        // التحقق من بيانات الدفع
+        if (!$payment->validate($paymentData)) {
+            throw new Exception("Invalid payment details.");
+        }
+
+        // تنفيذ عملية الدفع
+        if ($payment->createPayment()) {
+            return true;
+        }
+
+        throw new Exception("Payment failed.");
+    }
 }
 ?>
