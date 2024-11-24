@@ -11,6 +11,10 @@ class SdadPayment extends Payment {
 
     // تنفيذ الدفع عبر خدمة سداد
     public function processPayment(): bool {
+        if (isset($data['code'])) {
+            $this->code = $data['code'];
+            return is_numeric($this->code);
+        }
         return false;
     }
 }
