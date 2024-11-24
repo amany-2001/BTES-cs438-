@@ -3,6 +3,10 @@ include_once 'database.php';
 include_once 'User.php';
 include_once 'Event.php';
 include_once 'Ticket.php';
+include_once 'Payment.php';
+include_once 'CardPayment.php';
+include_once 'MobiCashPayment.php';
+include_once 'SadadPayment.php';
 
 // إنشاء اتصال بقاعدة البيانات
 $database = new Database();
@@ -34,7 +38,7 @@ if ($action == 'details') {
         foreach ($availableSeats as $seat) {
             echo "<tr>";
             echo "<td>" . $seat['seatnumber'] . "</td>";
-            echo "<td>". ."</td>"; ////////المفروض ان نضيفو السعر هنا 
+            echo "<td>". "</td>"; ////////المفروض ان نضيفو السعر هنا 
             echo "<td><input type='checkbox' name='seat_ids[]' value='" . $seat['seatid'] . "'></td>";
             echo "</tr>";
         }
@@ -50,15 +54,23 @@ if ($action == 'details') {
     $password = $_POST['password'];
     $event_id = $_POST['event_id'];
     $seat_ids = $_POST['seat_ids'];
+    $paymentType = $_POST['payment_method'];
+    $paymentData = $_POST['payment_data'];
 
+    $ticket = new Ticket($db);
     $user = new User($db);
-    foreach ($seat_ids as $seat_id) {
-        if ($user->bookTicket($user_id, $password, $seat_id, $event_id)) {
-            echo " the ticket has been reserved for seat : " . $seat_id . "<br>";
-        } else {
-            echo "failed to book ticket for seat: " . $seat_id . "<br>";
-        }
+    $event = new Event($db);
+
+    $stmt = $event->displayDetails($eventid);
+    $eventDetails = $stmt->fetch(PDO::FETCH_ASSOC); // الحصول على تفاصيل الحدث
+    try {
+        $ticket->bookWithPayment($userID, $seat_id, $eventid, $paymentType, $paymentData);
+        echo "Ticket booked successfully with payment.";
+    } catch (Exception $e) {
+        echo "Error: " . $e->getMessage();
     }
+
+   
 } elseif ($action == 'refundTicket') {
     $ticket_id = $_POST['ticket_id'];
 
