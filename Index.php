@@ -1,9 +1,5 @@
+
 <?php
-session_start();
-if(!isset($_SESSION['user'])){
-    header("Location:login.php");
-    exit();
-}    
 include_once 'database.php';
 include_once 'User.php';
 include_once 'Event.php';
@@ -18,14 +14,8 @@ $db = $database->getConnection();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="style.css">  
-
     <title>Event Management</title>
-
-    <a href="search.php">Search for Events</a>
-    <a href="logout.php">logout</a>
-
-
+    <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
     <h1>Event Management System</h1>
@@ -39,25 +29,25 @@ $db = $database->getConnection();
             echo $row['category']. '<br>' ;
             echo "<form action='action.php' method='post'>";
             echo "<input type='hidden' name='action' value='details'>";
-            echo "<input type='hidden' name='eventid' value='" . $row['eventid'] . "'>";
+            echo "<input type='hidden' name='event_id' value='" . $row['eventid'] . "'>";
             echo "<button type='submit'>Details</button>";
             echo "</form>";
         }
-        if (isset($_GET['eventid'])) {
-            $eventid = $_GET['eventid'];
+        if (isset($_GET['event_id'])) {
+            $event_id = $_GET['event_id'];
             $seatObj = new Seat($db);
-            $availableSeats = $seatObj->getAvailableSeatsByEvent($eventid);
+            $availableSeats = $seatObj->getAvailableSeatsByEvent($event_id);
 
-            echo "<h2>Available Seats for Event ID: $eventid</h2>";
+            echo "<h2>Available Seats for Event ID: $event_id</h2>";
             if (!empty($availableSeats)) {
                 foreach ($availableSeats as $seat) {
                     echo "Seat Number: " . $seat['seat_number'] . "<br>";
                     ?>
                     <form action="action.php" method="post">
                         <input type="hidden" name="action" value="choose_seat">
-                        <input type="hidden" name="seat_id" value="<?php echo $seat['seat_id']; ?>">
-                        <input type="hidden" name="eventid" value="<?php echo $eventid; ?>">
-                        <button type="submit">go to booking</button>
+                        <input type="hidden" name="seat_id" value="<?php echo $seat['seatid']; ?>">
+                        <input type="hidden" name="event_id" value="<?php echo $event_id; ?>">
+                        <button type="submit">Book this Seat</button>
                     </form>
                     <br>
                     <?php
