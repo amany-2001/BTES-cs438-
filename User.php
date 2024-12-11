@@ -3,6 +3,7 @@ include_once 'database.php';
 require_once 'Seat.php';
 require_once 'Ticket.php';
 require_once 'Review.php';
+
 $database = new Database();
 $db = $database->getConnection();
 
@@ -14,54 +15,50 @@ class User {
     public $userName;
     public $userAge;
     public $email;
-    public $point;
-    public $accountNumber;
-    public $password;
-    public $phone;
     public $review;
 
     public function __construct($db) {
         $this->conn = $db;
     }
-    public function bookTicket($user_id, $password, $seat_id, $event_id) {
-        try {
-            // التحقق من id,password
-            $userQuery = "SELECT * FROM users WHERE userid = ? AND password = ?";
-            $userStmt = $this->conn->prepare($userQuery);
-            $userStmt->bindParam(1, $user_id);
-            $userStmt->bindParam(2, $password); 
-            $userStmt->execute();
-            $userData = $userStmt->fetch(PDO::FETCH_ASSOC);
-    
-            if ($userData) {
-                // التحقق من توفر المقعد
-                $seat = new Seat($this->conn);
-    
-                if ($seat->isSeatAvailable($seat_id)) {
-                    // جلب السعر من الكلاس Ticket
-                    $ticket = new Ticket($this->conn);
-                    $price = $ticket->getPrice($event_id, $seat_id); // استدعاء الدالة لإرجاع السعر
-    
-                    // إدراج بيانات الحجز في tickets
-                    $query = "UPDATE tickets SET status = 'booked', user_id = ? WHERE seat_id = ? AND event_id = ?";
-                    $stmt = $this->conn->prepare($query);
-                    $stmt->bindParam(1, $user_id);
-                    $stmt->bindParam(2, $seat_id);
-                    $stmt->bindParam(3, $event_id);
-    
-                    if ($stmt->execute()) {
-                        // تحديث حالة توفر المقعد
-                        $seat->updateSeatAvailability($seat_id, false); // دالة لتحديث حالة المقعد في كلاس Seat
-                        return true;
-                    }
-                }
+   // داخل كلاس User.php أو Ticket.php
+public function bookTicket($user_id, $seat_id, $eventid) {
+    try {
+        foreach ($seat_id as $seat_id) {
+            // التحقق من توفر المقعد
+            $seatQuery = "SELECT isavailable FROM seats WHERE seat_id = ? AND eventid = ?";
+            $seatStmt = $this->conn->prepare($seatQuery);
+            $seatStmt->bindParam(1, $seat_id);
+            $seatStmt->bindParam(2, $eventid);
+            $seatStmt->execute();
+            $seat = $seatStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($seat && $seat['isavailable']) {
+                // حجز التذكرة
+                $query = "INSERT INTO tickets (user_id, seat_id, eventid, status) 
+                          VALUES (?, ?, ?, 'booked')";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(1, $user_id);
+                $stmt->bindParam(2, $seat_id);
+                $stmt->bindParam(3, $eventid);
+                $stmt->execute();
+
+                // تحديث حالة المقعد إلى "غير متاح"
+                $updateSeatQuery = "UPDATE seats SET isavailable = 0 WHERE seat_id = ? AND eventid = ?";
+                $updateSeatStmt = $this->conn->prepare($updateSeatQuery);
+                $updateSeatStmt->bindParam(1, $seat_id);
+                $updateSeatStmt->bindParam(2, $eventid);
+                $updateSeatStmt->execute();
+            } else {
+                throw new Exception("Seat $seat_id is not available.");
             }
-            return false;
-        } catch (PDOException $e) {
-            echo "error in bookTicket: " . $e->getMessage();
-            return false;
         }
+        return true;
+    } catch (Exception $e) {
+        echo "Error: " . $e->getMessage();
+        return false;
     }
+}
+
 
 
     public function refundTicket($ticket_id) {
@@ -107,4 +104,3 @@ class User {
    
 }
 ?>
-
