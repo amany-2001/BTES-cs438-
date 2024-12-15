@@ -5,59 +5,77 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
     exit();
 }
 
-include_once 'database.php';
+// استيراد الملفات المطلوبة
+include_once 'database.php';       // الاتصال بقاعدة البيانات
+include_once 'EventObserver.php';  // Observer Pattern للإشعارات
+
+// الاتصال بقاعدة البيانات
 $database = new Database();
 $db = $database->getConnection();
 
+// إنشاء مدير الأحداث للمراقبين (Observer Pattern)
+$eventManager = new EventManager();
+$eventManager->addObserver(new EmailNotifier());
+$eventManager->addObserver(new Logger());
+
 // إضافة حدث جديد
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_event'])) {
-    $event_name = $_POST['event_name'];
-    $event_category = $_POST['category'];
-    $event_date = $_POST['event_date'];
-    $event_location = $_POST['event_location'];
-    $seat_count = intval($_POST['seat_count']);
+    $eventData = [
+        'name' => $_POST['event_name'],
+        'category' => $_POST['category'],
+        'date' => $_POST['event_date'],
+        'location' => $_POST['event_location'],
+        'seat_count' => intval($_POST['seat_count']),
+        'price_per_seat' => floatval($_POST['price_per_seat'])
+    ];
 
     try {
-        // بدء معاملة
+        // بدء معاملة قاعدة البيانات
         if (!$db->inTransaction()) {
             $db->beginTransaction();
         }
 
-        // إضافة الحدث
+        // إضافة الحدث إلى قاعدة البيانات
         $query = "INSERT INTO events (eventname, date, location, category) 
                   VALUES (:eventname, :date, :location, :category)";
         $stmt = $db->prepare($query);
-        $stmt->bindParam(':eventname', $event_name);
-        $stmt->bindParam(':date', $event_date);
-        $stmt->bindParam(':location', $event_location);
-        $stmt->bindParam(':category', $event_category);
+        $stmt->bindParam(':eventname', $eventData['name']);
+        $stmt->bindParam(':date', $eventData['date']);
+        $stmt->bindParam(':location', $eventData['location']);
+        $stmt->bindParam(':category', $eventData['category']);
         $stmt->execute();
 
-        $event_id = $db->lastInsertId(); // الحصول على ID الحدث الجديد
+        // الحصول على ID الحدث الذي تم إضافته
+        $event_id = $db->lastInsertId();
 
-        // إضافة المقاعد وإنشاء التذاكر
+        // إضافة المقاعد والتذاكر
         $seat_query = "INSERT INTO seats (eventid, seatnumber, isavailable) VALUES (:eventid, :seatnumber, 1)";
         $seat_stmt = $db->prepare($seat_query);
 
         $ticket_query = "INSERT INTO tickets (seat_id, eventid, status) VALUES (:seat_id, :eventid, 'available')";
         $ticket_stmt = $db->prepare($ticket_query);
 
-        for ($i = 1; $i <= $seat_count; $i++) {
-            // إضافة المقعد
+        // إضافة المقاعد والتذاكر بناءً على عدد المقاعد
+        for ($i = 1; $i <= $eventData['seat_count']; $i++) {
             $seat_stmt->bindParam(':eventid', $event_id);
             $seat_stmt->bindParam(':seatnumber', $i);
             $seat_stmt->execute();
 
-            $seat_id = $db->lastInsertId(); // الحصول على ID المقعد الجديد
+            $seat_id = $db->lastInsertId();  // الحصول على ID المقعد الجديد
 
-            // إضافة التذكرة المرتبطة بالمقعد
+            // إضافة التذكرة
             $ticket_stmt->bindParam(':seat_id', $seat_id);
             $ticket_stmt->bindParam(':eventid', $event_id);
             $ticket_stmt->execute();
         }
 
+        // تنفيذ عملية commit بعد إضافة جميع البيانات
         $db->commit();
-        $success_message = "Event, seats, and tickets added successfully!";
+
+        // إشعار المراقبين بعد إضافة الحدث
+        $eventManager->notifyObservers($eventData);
+
+        $success_message = "Event added successfully!";
     } catch (Exception $e) {
         if ($db->inTransaction()) {
             $db->rollBack();
@@ -72,7 +90,6 @@ $stmt = $db->prepare($query);
 $stmt->execute();
 $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -136,11 +153,10 @@ $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <td>
                     <a href="edit_event.php?id=<?= $event['eventid'] ?>">Edit</a> |
                     <a href="delete_event.php?id=<?= $event['eventid'] ?>" onclick="return confirm('Are you sure?')">Delete</a>
-                  
-                    
                 </td>
             </tr>
         <?php endforeach; ?>
     </table>
 </body>
 </html>
+
